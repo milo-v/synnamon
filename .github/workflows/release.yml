@@ -54,3 +54,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+
+  verify:
+    name: Verify install from the published release
+    needs: publish
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04
+    steps:
+      - name: Install prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git
+      - uses: actions/checkout@v4
+      - name: Run install.sh against the release
+        run: SYNNAMON_VERSION="${GITHUB_REF_NAME#v}" bash install.sh
+      - name: Check the installed binary
+        run: |
+          synnamon --help
+          getent passwd synnamon

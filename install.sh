@@ -17,7 +17,6 @@ VERSION="${SYNNAMON_VERSION:-latest}"
 die() { echo "error: $*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "run as root, e.g.: curl -fsSL <url> | sudo bash"
-case "$REPO" in milo-v/*) die "SYNNAMON_REPO is not set; edit REPO in this script or export SYNNAMON_REPO=<user>/synnamon" ;; esac
 command -v apt-get >/dev/null || die "apt-get not found; this installer supports Ubuntu/Debian only"
 command -v curl >/dev/null || die "curl is required: apt-get install -y curl"
 [ "$(dpkg --print-architecture)" = "amd64" ] || die "only amd64 packages are published (this machine: $(dpkg --print-architecture))"
