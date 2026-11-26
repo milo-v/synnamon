@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test and package (Ubuntu 26.04)
+    runs-on: ubuntu-latest
+    # Build inside Ubuntu 26.04 so the binary and .deb match the target OS.
+    container: ubuntu:26.04
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git build-essential pkg-config
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: |
+          curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Test
+        run: cargo test --locked
+      - name: Build release binary
+        run: cargo build --release --locked
+      - name: Build .deb
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb --no-build
+      - name: Smoke-test the package
+        run: |
+          apt-get install -y ./target/debian/synnamon_*_amd64.deb
+          synnamon --help
+          synnamon config show
+          getent passwd synnamon
+          test -f /lib/systemd/system/synnamon.service
+          apt-get purge -y synnamon

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+fi
+if [ "$1" = "purge" ]; then
+    # The config holds the webhook URL, so purge removes it along with the service user.
+    rm -rf /etc/synnamon
+    if getent passwd synnamon >/dev/null; then
+        userdel synnamon || true
+    fi
+fi
+exit 0

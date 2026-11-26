@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+if [ "$1" = "configure" ]; then
+    if ! getent passwd synnamon >/dev/null; then
+        useradd --system --user-group --no-create-home --shell /usr/sbin/nologin synnamon
+    fi
+    # Lets the service read the journal without running as root.
+    usermod -aG systemd-journal synnamon
+    install -d -o root -g synnamon -m 0750 /etc/synnamon
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload || true
+        if systemctl is-active --quiet synnamon; then
+            systemctl restart synnamon || true
+        fi
+    fi
+    if [ -z "$2" ]; then
+        echo "synnamon installed. Next:"
+        echo "  sudo synnamon config                 # guided setup"
+        echo "  sudo synnamon test                   # send a test alert"
+        echo "  sudo systemctl enable --now synnamon"
+    fi
+fi
+exit 0

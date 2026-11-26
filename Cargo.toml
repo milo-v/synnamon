@@ -2,6 +2,7 @@
 name = "synnamon"
 version = "0.1.0"
 edition = "2024"
+description = "Lightweight system monitor that alerts a webhook on low battery and logins"
 
 [dependencies]
 anyhow = "1.0.105"
@@ -27,3 +28,16 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+[package.metadata.deb]
+name = "synnamon"
+section = "admin"
+priority = "optional"
+extended-description = "Watches battery level and successful SSH/local logins and sends alerts to a Discord or generic HTTP webhook. Configure with `sudo synnamon config`."
+depends = "$auto, systemd"
+maintainer-scripts = "packaging/debian"
+assets = [
+    ["target/release/synnamon", "usr/bin/", "755"],
+    ["packaging/synnamon.service", "lib/systemd/system/", "644"],
+    ["README.md", "usr/share/doc/synnamon/README.md", "644"],
+]

@@ -7,7 +7,7 @@ Wants=network-online.target
 User=synnamon
 Group=synnamon
 SupplementaryGroups=systemd-journal
-ExecStart=/usr/local/bin/synnamon run
+ExecStart=/usr/bin/synnamon run
 Restart=on-failure
 RestartSec=5
 
