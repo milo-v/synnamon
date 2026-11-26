@@ -1,1 +1,1 @@
-{"SYSLOG_IDENTIFIER":"systemd-logind","_COMM":"systemd-logind","MESSAGE":"New session 7 of user milo."}
+{"_UID":"0","SYSLOG_IDENTIFIER":"systemd-logind","_COMM":"systemd-logind","MESSAGE":"New session 7 of user milo."}

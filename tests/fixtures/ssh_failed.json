@@ -1,1 +1,1 @@
-{"SYSLOG_IDENTIFIER":"sshd","_COMM":"sshd","MESSAGE":"Failed password for milo from 10.0.0.7 port 40022 ssh2"}
+{"_UID":"0","SYSLOG_IDENTIFIER":"sshd","_COMM":"sshd","MESSAGE":"Failed password for milo from 10.0.0.7 port 40022 ssh2"}

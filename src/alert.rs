@@ -96,13 +96,8 @@ pub fn send_with_backoff(w: &Webhook, a: &Alert, backoffs: &[Duration]) -> Resul
                 }
                 last = anyhow!("webhook returned HTTP {status}");
                 if status == 429 {
-                    let secs = resp
-                        .headers()
-                        .get("retry-after")
-                        .and_then(|v| v.to_str().ok())
-                        .and_then(|v| v.trim().parse::<f64>().ok())
-                        .unwrap_or(1.0);
-                    Some(Duration::from_secs_f64(secs.clamp(0.0, 10.0)))
+                    let header = resp.headers().get("retry-after").and_then(|v| v.to_str().ok()).unwrap_or("");
+                    Some(parse_retry_after(header))
                 } else if status >= 500 {
                     None
                 } else {
@@ -119,6 +114,14 @@ pub fn send_with_backoff(w: &Webhook, a: &Alert, backoffs: &[Duration]) -> Resul
         }
     }
     Err(last)
+}
+
+/// Seconds to wait from a `Retry-After` value: 1 s if unusable (NaN, inf, negative, text), capped at 10 s.
+fn parse_retry_after(v: &str) -> Duration {
+    match v.trim().parse::<f64>() {
+        Ok(s) if s.is_finite() && s >= 0.0 => Duration::from_secs_f64(s.min(10.0)),
+        _ => Duration::from_secs(1),
+    }
 }
 
 pub fn spawn_sender(rx: Receiver<Alert>, cfg: Arc<RwLock<Config>>) -> JoinHandle<()> {
@@ -171,6 +174,16 @@ mod tests {
         assert_eq!(p["kind"], "ssh_login");
         assert_eq!(p["title"], "t");
         assert_eq!(p["body"], "b");
+    }
+
+    #[test]
+    fn retry_after_nan_inf_and_garbage_are_safe() {
+        assert_eq!(parse_retry_after("NaN"), Duration::from_secs(1));
+        assert_eq!(parse_retry_after("inf"), Duration::from_secs(1));
+        assert_eq!(parse_retry_after("-5"), Duration::from_secs(1));
+        assert_eq!(parse_retry_after("soon"), Duration::from_secs(1));
+        assert_eq!(parse_retry_after("3"), Duration::from_secs(3));
+        assert_eq!(parse_retry_after("999"), Duration::from_secs(10));
     }
 
     #[test]

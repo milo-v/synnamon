@@ -27,6 +27,11 @@ pub fn read_batteries(root: &Path) -> Vec<Reading> {
         if read_trim(&dir.join("type")).as_deref() != Some("Battery") {
             continue;
         }
+        // Peripherals (wireless mice, headsets, phones) report scope=Device; only the system's own
+        // batteries matter.
+        if read_trim(&dir.join("scope")).as_deref() == Some("Device") {
+            continue;
+        }
         let Some(percent) = read_trim(&dir.join("capacity")).and_then(|s| s.parse::<u8>().ok()) else {
             continue;
         };
@@ -163,6 +168,17 @@ mod tests {
         if let Some(c) = cap {
             fs::write(d.join("capacity"), format!("{c}\n")).unwrap();
         }
+    }
+
+    #[test]
+    fn peripheral_device_batteries_are_ignored() {
+        let d = tempfile::tempdir().unwrap();
+        supply(d.path(), "BAT0", "Battery", Some("80"), "Discharging");
+        supply(d.path(), "hidpp_battery_0", "Battery", Some("5"), "Discharging");
+        fs::write(d.path().join("hidpp_battery_0/scope"), "Device\n").unwrap();
+        let all = read_batteries(d.path());
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0].percent, 80);
     }
 
     #[test]

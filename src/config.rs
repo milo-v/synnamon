@@ -2,11 +2,7 @@ use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const DEFAULT_PATH: &str = "/etc/synna            if let Some(dir) = path.parent() {
-                if let Ok(m) = std::fs::metadata(dir) {
-                    let _ = chown(&tmp, None, Some(m.gid()));
-                }
-            }on/config.toml";
+pub const DEFAULT_PATH: &str = "/etc/synnamon/config.toml";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -165,6 +161,11 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_path_is_etc_synnamon() {
+        assert_eq!(DEFAULT_PATH, "/etc/synnamon/config.toml");
+    }
 
     #[test]
     fn load_missing_file_returns_defaults() {

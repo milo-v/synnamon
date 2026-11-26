@@ -29,12 +29,18 @@ fn field<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
 /// Parse one `journalctl -o json` line into a login event, if it is one.
 pub fn parse_line(line: &str) -> Option<LoginEvent> {
     let v: Value = serde_json::from_str(line).ok()?;
+    // SYSLOG_IDENTIFIER is spoofable by any local user (`logger -t sshd ...`); _UID is added by
+    // journald itself, so require that the sender is root.
+    if field(&v, "_UID") != Some("0") {
+        return None;
+    }
     let ident = field(&v, "SYSLOG_IDENTIFIER").or_else(|| field(&v, "_COMM"))?;
     let msg = message_text(v.get("MESSAGE")?)?;
     let t: Vec<&str> = msg.split_whitespace().collect();
     match ident {
         // "Accepted <method> for <user> from <ip> port <p> ssh2 ..."
-        "sshd" if t.len() >= 6 && t[0] == "Accepted" && t[2] == "for" && t[4] == "from" => {
+        // OpenSSH 9.8+ logs from the `sshd-session` process.
+        "sshd" | "sshd-session" if t.len() >= 6 && t[0] == "Accepted" && t[2] == "for" && t[4] == "from" => {
             Some(LoginEvent::Ssh { user: t[3].into(), ip: t[5].into(), method: t[1].into() })
         }
         // "New session <id> of user <user>."
@@ -169,6 +175,19 @@ mod tests {
             parse_line(&fx("ssh_password.json")),
             Some(LoginEvent::Ssh { user: "milo".into(), ip: "10.0.0.7".into(), method: "password".into() })
         );
+    }
+
+    #[test]
+    fn parses_sshd_session_identifier() {
+        assert_eq!(
+            parse_line(&fx("ssh_session_ident.json")),
+            Some(LoginEvent::Ssh { user: "milo".into(), ip: "192.168.1.50".into(), method: "publickey".into() })
+        );
+    }
+
+    #[test]
+    fn ignores_lines_from_non_root_senders() {
+        assert_eq!(parse_line(&fx("spoofed_user_logger.json")), None);
     }
 
     #[test]

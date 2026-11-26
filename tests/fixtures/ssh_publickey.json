@@ -1,1 +1,1 @@
-{"SYSLOG_IDENTIFIER":"sshd","_COMM":"sshd","MESSAGE":"Accepted publickey for milo from 192.168.1.50 port 52144 ssh2: ED25519 SHA256:abc"}
+{"_UID":"0","SYSLOG_IDENTIFIER":"sshd","_COMM":"sshd","MESSAGE":"Accepted publickey for milo from 192.168.1.50 port 52144 ssh2: ED25519 SHA256:abc"}

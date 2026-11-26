@@ -1,0 +1,1 @@
+{"_UID":"0","SYSLOG_IDENTIFIER":"sshd-session","_COMM":"sshd-session","MESSAGE":"Accepted publickey for milo from 192.168.1.50 port 52144 ssh2: ED25519 SHA256:abc"}
