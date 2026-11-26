@@ -39,6 +39,7 @@ jobs:
           synnamon config show
           getent passwd synnamon
           test -f /lib/systemd/system/synnamon.service
-          ls /usr/share/man/man1/synnamon.1*
+          # The ubuntu container image excludes /usr/share/man at install time, so inspect the package itself.
+          dpkg-deb -c target/debian/synnamon_*_amd64.deb | grep -E "usr/share/man/man1/synnamon.1(.gz)?$"
           synnamon --version
           apt-get purge -y synnamon
