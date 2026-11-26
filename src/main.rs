@@ -4,6 +4,7 @@ mod cli;
 mod config;
 mod daemon;
 mod logins;
+mod update;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -29,6 +30,12 @@ enum Command {
     },
     /// Send a test alert through the configured webhook
     Test,
+    /// Check GitHub for a newer release and install it
+    Update {
+        /// Only report whether an update is available
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -47,6 +54,7 @@ fn main() {
         Command::Run => daemon::run(cli.config),
         Command::Config { action } => cli::cmd_config(&cli.config, action),
         Command::Test => cli::cmd_test(&cli.config),
+        Command::Update { check } => update::run(check),
     };
     if let Err(e) = result {
         eprintln!("error: {e:#}");

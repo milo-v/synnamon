@@ -7,17 +7,23 @@ if [ "$1" = "configure" ]; then
     # Lets the service read the journal without running as root.
     usermod -aG systemd-journal synnamon
     install -d -o root -g synnamon -m 0750 /etc/synnamon
+
     if [ -d /run/systemd/system ]; then
         systemctl daemon-reload || true
-        if systemctl is-active --quiet synnamon; then
+        # $2 is the previously installed version (empty on a fresh install).
+        # Enable and start on a fresh install, and when upgrading from 0.1.x, which never enabled
+        # it. Later upgrades keep whatever the admin chose and only restart a running service.
+        if [ -z "$2" ] || dpkg --compare-versions "$2" lt 0.2.0; then
+            systemctl enable --now synnamon || true
+        elif systemctl is-active --quiet synnamon; then
             systemctl restart synnamon || true
         fi
     fi
+
     if [ -z "$2" ]; then
-        echo "synnamon installed. Next:"
-        echo "  sudo synnamon config                 # guided setup"
-        echo "  sudo synnamon test                   # send a test alert"
-        echo "  sudo systemctl enable --now synnamon"
+        echo "synnamon installed and started. Next:"
+        echo "  sudo synnamon config      # set your webhook (applied automatically)"
+        echo "  sudo synnamon test        # send a test alert"
     fi
 fi
 exit 0

@@ -74,12 +74,16 @@ impl SessionInfo for Loginctl {
     }
 }
 
+fn is_loopback(ip: &str) -> bool {
+    ip == "::1" || ip.starts_with("127.")
+}
+
 pub fn to_alert(ev: &LoginEvent, cfg: &Logins, info: &dyn SessionInfo) -> Option<Alert> {
     match ev {
         LoginEvent::Ssh { user, ip, method } if cfg.ssh => Some(Alert {
             kind: AlertKind::SshLogin,
             title: "SSH login".into(),
-            body: format!("{user} logged in from {ip} via {method}"),
+            body: format!("{user} logged in from {ip} via {method}{}", if is_loopback(ip) { " (loopback: local session or a tunnel such as cloudflared; the real client IP is not visible to sshd)" } else { "" }),
         }),
         LoginEvent::LogindSession { session_id, user } if cfg.local && info.is_local(session_id) => Some(Alert {
             kind: AlertKind::LocalLogin,
@@ -240,6 +244,21 @@ mod tests {
         assert_eq!(a.kind, AlertKind::SshLogin);
         assert_eq!(a.title, "SSH login");
         assert!(a.body.contains("milo") && a.body.contains("1.2.3.4") && a.body.contains("publickey"));
+    }
+
+    #[test]
+    fn loopback_ssh_login_is_labelled_as_tunnel_or_local() {
+        let ev = LoginEvent::Ssh { user: "milo".into(), ip: "127.0.0.1".into(), method: "password".into() };
+        let a = to_alert(&ev, &on(), &Fake(true)).unwrap();
+        assert!(a.body.contains("127.0.0.1") && a.body.contains("tunnel"), "{}", a.body);
+        let ev6 = LoginEvent::Ssh { user: "milo".into(), ip: "::1".into(), method: "password".into() };
+        assert!(to_alert(&ev6, &on(), &Fake(true)).unwrap().body.contains("tunnel"));
+    }
+
+    #[test]
+    fn remote_ssh_login_has_no_tunnel_label() {
+        let a = to_alert(&ssh(), &on(), &Fake(true)).unwrap();
+        assert!(!a.body.contains("tunnel"));
     }
 
     #[test]

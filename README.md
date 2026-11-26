@@ -60,7 +60,7 @@ cargo deb --no-build
 sudo apt install ./target/debian/synnamon_*_amd64.deb
 ```
 
-The package installs the binary to `/usr/bin/synnamon`, a systemd unit, and creates an unprivileged `synnamon` user that is allowed to read the journal. It does **not** touch PAM, sshd, or any authentication configuration, and it does not start the service until you enable it.
+The package installs the binary to `/usr/bin/synnamon`, a systemd unit, and creates an unprivileged `synnamon` user that is allowed to read the journal. It does **not** touch PAM, sshd, or any authentication configuration, The service is enabled and started automatically (it does nothing useful until you set a webhook below).
 
 ---
 
@@ -77,12 +77,17 @@ The package installs the binary to `/usr/bin/synnamon`, a systemd unit, and crea
    sudo synnamon test
    ```
    A "Synnamon test" message should appear in your channel.
-4. **Start it:**
-   ```bash
-   sudo systemctl enable --now synnamon
-   ```
 
-Config changes are picked up automatically by the running service, with no restart needed.
+The service is already running after install, and it picks up config changes automatically within a couple of seconds, so there is nothing to restart or enable.
+
+## Updating
+
+```bash
+synnamon update --check     # is a newer release available?
+sudo synnamon update        # download, verify, and install it
+```
+
+`update` checks the latest GitHub release and, if it is newer than the installed version, runs that release's installer (which verifies the package checksum and installs it with `apt`). Your config is kept and the service is restarted. Running the one-line installer again does the same thing. Synnamon never updates itself in the background.
 
 ## Managing configuration
 

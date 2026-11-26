@@ -72,3 +72,5 @@ jobs:
         run: |
           synnamon --help
           getent passwd synnamon
+          # Exercises the real HTTPS client on Ubuntu 26.04 against GitHub.
+          synnamon update --check
