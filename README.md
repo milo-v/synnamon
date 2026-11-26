@@ -160,8 +160,6 @@ git tag v0.1.0 && git push origin v0.1.0
 
 The release workflow builds the `.deb`, writes `SHA256SUMS`, and attaches both plus `install.sh` to a GitHub release. The tag must match the `Cargo.toml` version.
 
-Design and implementation notes are in `docs/superpowers/`.
-
 ## License
 
 [MIT](LICENSE)

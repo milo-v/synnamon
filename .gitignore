@@ -2,3 +2,4 @@
 /.superpowers
 *.deb
 *.tmp
+/docs/superpowers/
