@@ -46,11 +46,6 @@ pub fn run(config_path: PathBuf) -> Result<()> {
     crate::battery::spawn(cfg.clone(), tx.clone(), PathBuf::from(crate::battery::SYSFS_ROOT));
     crate::logins::spawn(cfg.clone(), tx.clone());
     eprintln!("synnamon running (config: {})", config_path.display());
-    let _ = tx.try_send(Alert {
-        kind: AlertKind::Test,
-        title: "Synnamon started".into(),
-        body: "Monitoring is active.".into(),
-    });
 
     loop {
         std::thread::sleep(Duration::from_secs(2));
