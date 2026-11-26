@@ -13,12 +13,18 @@ fn read_trim(p: &Path) -> Option<String> {
     std::fs::read_to_string(p).ok().map(|s| s.trim().to_string())
 }
 
-/// Whether external power is connected. Uses the AC / USB-C supplies when the machine has any,
-/// otherwise the battery status. `None` when the machine reports neither (e.g. a VM).
+/// Whether external power is connected, or `None` when the machine reports neither an adapter nor a
+/// battery (e.g. a VM).
+///
+/// The battery status is trusted first, because some laptops (ThinkPad E490) leave `AC/online` at 1
+/// when unplugged and report `Not charging` instead of `Discharging`. `Not charging` is ambiguous on
+/// machines with a charge limit (plugged in, held at the limit), so there, and when the status is
+/// `Unknown`, the AC / USB-C supplies decide.
 pub fn read_plugged(root: &Path) -> Option<bool> {
     let entries = std::fs::read_dir(root).ok()?;
     let mut sources: Vec<bool> = vec![];
-    let mut batteries: Vec<bool> = vec![];
+    let (mut charging, mut discharging, mut not_charging, mut held_at_limit) = (false, false, false, false);
+    let mut has_battery = false;
     for e in entries.flatten() {
         let dir = e.path();
         // Peripherals (wireless mice, headsets, phones) report scope=Device.
@@ -31,13 +37,38 @@ pub fn read_plugged(root: &Path) -> Option<bool> {
                 sources.push(online == "1");
             }
         } else if ty == "Battery" {
-            if let Some(status) = read_trim(&dir.join("status")) {
-                batteries.push(matches!(status.as_str(), "Charging" | "Full" | "Not charging"));
+            let Some(status) = read_trim(&dir.join("status")) else { continue };
+            has_battery = true;
+            match status.as_str() {
+                "Charging" | "Full" => charging = true,
+                "Discharging" => discharging = true,
+                "Not charging" => {
+                    not_charging = true;
+                    let level: Option<u8> = read_trim(&dir.join("capacity")).and_then(|s| s.parse().ok());
+                    let limit: Option<u8> = ["charge_control_end_threshold", "charge_stop_threshold"]
+                        .iter()
+                        .find_map(|f| read_trim(&dir.join(f)).and_then(|s| s.parse().ok()));
+                    if matches!((level, limit), (Some(l), Some(t)) if l >= t) {
+                        held_at_limit = true;
+                    }
+                }
+                _ => {}
             }
         }
     }
-    let list = if sources.is_empty() { batteries } else { sources };
-    if list.is_empty() { None } else { Some(list.contains(&true)) }
+    let from_adapter = || if sources.is_empty() { None } else { Some(sources.contains(&true)) };
+    if has_battery {
+        if charging {
+            return Some(true);
+        }
+        if discharging {
+            return Some(false);
+        }
+        if not_charging && !held_at_limit {
+            return Some(false);
+        }
+    }
+    from_adapter()
 }
 
 /// Turns raw readings into alerts. The first reading is only a baseline, and a change must be seen
@@ -84,12 +115,18 @@ pub fn spawn(cfg: Arc<RwLock<Config>>, tx: SyncSender<Alert>, root: PathBuf) -> 
     std::thread::spawn(move || {
         let mut tracker = Tracker::new();
         let mut warned_none = false;
+        let mut logged_baseline = false;
         loop {
             if cfg.read().unwrap().power.enabled {
                 match read_plugged(&root) {
                     Some(plugged) => {
                         let percent = crate::battery::lowest(&crate::battery::read_batteries(&root)).map(|r| r.percent);
+                        if !logged_baseline {
+                            eprintln!("power: external power is {}", if plugged { "connected" } else { "disconnected" });
+                            logged_baseline = true;
+                        }
                         if let Some(a) = tracker.update(plugged, percent) {
+                            eprintln!("power: {}", a.title);
                             crate::daemon::send_alert(&tx, a);
                         }
                     }
@@ -121,26 +158,60 @@ mod tests {
     }
 
     #[test]
-    fn mains_online_means_plugged() {
+    fn adapter_alone_decides_when_there_is_no_battery() {
         let d = tempfile::tempdir().unwrap();
         supply(d.path(), "AC", "Mains", "online", "1");
-        supply(d.path(), "BAT0", "Battery", "status", "Discharging");
+        assert_eq!(read_plugged(d.path()), Some(true));
+        supply(d.path(), "AC", "Mains", "online", "0");
+        assert_eq!(read_plugged(d.path()), Some(false));
+    }
+
+    #[test]
+    fn thinkpad_e490_not_charging_with_stuck_ac_means_unplugged() {
+        let d = tempfile::tempdir().unwrap();
+        supply(d.path(), "AC", "Mains", "online", "1");
+        supply(d.path(), "BAT0", "Battery", "status", "Not charging");
+        assert_eq!(read_plugged(d.path()), Some(false));
+        supply(d.path(), "BAT0", "Battery", "status", "Charging");
         assert_eq!(read_plugged(d.path()), Some(true));
     }
 
     #[test]
-    fn mains_offline_means_unplugged_even_if_battery_says_full() {
+    fn battery_status_wins_over_a_stuck_adapter() {
         let d = tempfile::tempdir().unwrap();
+        supply(d.path(), "AC", "Mains", "online", "1");
+        supply(d.path(), "BAT0", "Battery", "status", "Discharging");
+        assert_eq!(read_plugged(d.path()), Some(false));
         supply(d.path(), "AC", "Mains", "online", "0");
         supply(d.path(), "BAT0", "Battery", "status", "Full");
+        assert_eq!(read_plugged(d.path()), Some(true));
+    }
+
+    #[test]
+    fn not_charging_at_the_charge_limit_defers_to_the_adapter() {
+        let d = tempfile::tempdir().unwrap();
+        supply(d.path(), "AC", "Mains", "online", "1");
+        supply(d.path(), "BAT0", "Battery", "status", "Not charging");
+        fs::write(d.path().join("BAT0/capacity"), "80\n").unwrap();
+        fs::write(d.path().join("BAT0/charge_control_end_threshold"), "80\n").unwrap();
+        assert_eq!(read_plugged(d.path()), Some(true));
+        supply(d.path(), "AC", "Mains", "online", "0");
         assert_eq!(read_plugged(d.path()), Some(false));
+    }
+
+    #[test]
+    fn unknown_battery_status_defers_to_the_adapter() {
+        let d = tempfile::tempdir().unwrap();
+        supply(d.path(), "AC", "Mains", "online", "1");
+        supply(d.path(), "BAT0", "Battery", "status", "Unknown");
+        assert_eq!(read_plugged(d.path()), Some(true));
     }
 
     #[test]
     fn usb_c_charger_counts_as_power() {
         let d = tempfile::tempdir().unwrap();
         supply(d.path(), "ucsi-source-psy-USBC000_001", "USB", "online", "1");
-        supply(d.path(), "BAT0", "Battery", "status", "Discharging");
+        supply(d.path(), "BAT0", "Battery", "status", "Unknown");
         assert_eq!(read_plugged(d.path()), Some(true));
     }
 
