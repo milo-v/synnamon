@@ -7,6 +7,7 @@ A small, fast system monitor that sends alerts to a Discord (or any HTTP) webhoo
 | Event | Alert |
 |-------|-------|
 | Battery drops below your threshold (default 20%) | once, then again only after it recovers and drops again |
+| Power plugged in / unplugged | which, with the battery level |
 | Successful SSH login | user, source IP, auth method |
 | Successful local login (console, tty, desktop) | user, session |
 
@@ -56,6 +57,7 @@ git clone https://github.com/milo-v/synnamon.git
 cd synnamon
 cargo install cargo-deb --locked
 cargo build --release --locked
+cargo run --release --locked --example mangen -- target/man/synnamon.1
 cargo deb --no-build
 sudo apt install ./target/debian/synnamon_*_amd64.deb
 ```
@@ -105,8 +107,11 @@ sudo synnamon config set battery.threshold 30
 | `battery.enabled` | `true` | Monitor the battery |
 | `battery.threshold` | `20` | Alert when below this percent (1-100) |
 | `battery.poll_secs` | `60` | How often to check (minimum 5) |
+| `power.enabled` | `true` | Alert when external power is plugged in or unplugged |
 | `logins.ssh` | `true` | Alert on successful SSH logins |
 | `logins.local` | `true` | Alert on successful local logins |
+
+Built-in help: `synnamon --help`, `synnamon config set --help` (lists every key), and `man synnamon`.
 
 Settings are stored in `/etc/synnamon/config.toml` (readable only by root and the `synnamon` service user, because it contains the webhook URL).
 
@@ -118,7 +123,7 @@ With `webhook.kind` set to `generic`, Synnamon POSTs JSON to your URL:
 {"kind": "ssh_login", "title": "SSH login", "body": "milo logged in from 192.168.1.50 via publickey"}
 ```
 
-`kind` is one of `battery`, `ssh_login`, `local_login`, `test`.
+`kind` is one of `battery`, `power`, `ssh_login`, `local_login`, `test`.
 
 ---
 
@@ -155,6 +160,7 @@ sudo apt purge synnamon      # also deletes /etc/synnamon (including the webhook
 ```bash
 cargo test
 cargo build --release
+cargo run --example mangen   # regenerates target/man/synnamon.1 from the CLI definition
 ```
 
 CI builds, tests, and packages inside an `ubuntu:26.04` container on every push (`.github/workflows/ci.yml`). To publish a release, bump `version` in `Cargo.toml`, then:

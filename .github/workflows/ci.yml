@@ -28,6 +28,7 @@ jobs:
       - name: Build .deb
         run: |
           cargo install cargo-deb --locked
+          cargo run --locked --release --example mangen -- target/man/synnamon.1
           cargo deb --no-build
       - name: Smoke-test the package
         run: |
@@ -38,4 +39,6 @@ jobs:
           synnamon config show
           getent passwd synnamon
           test -f /lib/systemd/system/synnamon.service
+          ls /usr/share/man/man1/synnamon.1*
+          synnamon --version
           apt-get purge -y synnamon

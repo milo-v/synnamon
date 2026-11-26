@@ -1,52 +1,15 @@
 mod alert;
 mod battery;
 mod cli;
+mod cli_def;
 mod config;
 mod daemon;
 mod logins;
+mod power;
 mod update;
 
-use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-
-#[derive(Parser)]
-#[command(name = "synnamon", about = "Lightweight system monitor and alerter")]
-struct Cli {
-    /// Path to the config file
-    #[arg(long, global = true, default_value = config::DEFAULT_PATH)]
-    config: PathBuf,
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand)]
-enum Command {
-    /// Run the monitoring daemon
-    Run,
-    /// Manage configuration (no arguments: guided setup)
-    Config {
-        #[command(subcommand)]
-        action: Option<ConfigAction>,
-    },
-    /// Send a test alert through the configured webhook
-    Test,
-    /// Check GitHub for a newer release and install it
-    Update {
-        /// Only report whether an update is available
-        #[arg(long)]
-        check: bool,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ConfigAction {
-    /// Print one setting
-    Get { key: String },
-    /// Change one setting
-    Set { key: String, value: String },
-    /// Print all settings (webhook URL hidden)
-    Show,
-}
+use clap::Parser;
+use cli_def::{Cli, Command};
 
 fn main() {
     let cli = Cli::parse();

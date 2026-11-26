@@ -44,6 +44,7 @@ pub fn run(config_path: PathBuf) -> Result<()> {
 
     alert::spawn_sender(rx, cfg.clone());
     crate::battery::spawn(cfg.clone(), tx.clone(), PathBuf::from(crate::battery::SYSFS_ROOT));
+    crate::power::spawn(cfg.clone(), tx.clone(), PathBuf::from(crate::battery::SYSFS_ROOT));
     crate::logins::spawn(cfg.clone(), tx.clone());
     eprintln!("synnamon running (config: {})", config_path.display());
 

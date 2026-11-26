@@ -29,7 +29,7 @@ fn ask(cfg: &mut Config, key: &str, label: &str, shown: &str, input: &mut dyn Bu
         if answer.is_empty() {
             return Ok(());
         }
-        let value = if key.starts_with("battery.enabled") || key.starts_with("logins.") {
+        let value = if key == "battery.enabled" || key == "power.enabled" || key.starts_with("logins.") {
             normalize_bool(&answer)
         } else {
             answer
@@ -52,6 +52,8 @@ pub fn wizard(cfg: &mut Config, input: &mut dyn BufRead, out: &mut dyn Write) ->
     ask(cfg, "battery.enabled", "Monitor battery?", &s, input, out)?;
     let s = cfg.battery.threshold.to_string();
     ask(cfg, "battery.threshold", "Alert when battery below (%)", &s, input, out)?;
+    let s = yn(cfg.power.enabled).to_string();
+    ask(cfg, "power.enabled", "Alert when power is plugged/unplugged?", &s, input, out)?;
     let s = yn(cfg.logins.ssh).to_string();
     ask(cfg, "logins.ssh", "Alert on SSH logins?", &s, input, out)?;
     let s = yn(cfg.logins.local).to_string();
@@ -74,8 +76,8 @@ pub fn save_config(cfg: &Config, path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn cmd_config(path: &Path, action: Option<crate::ConfigAction>) -> Result<()> {
-    use crate::ConfigAction::*;
+pub fn cmd_config(path: &Path, action: Option<crate::cli_def::ConfigAction>) -> Result<()> {
+    use crate::cli_def::ConfigAction::*;
     let mut cfg = Config::load(path)?;
     match action {
         None => {
@@ -125,16 +127,17 @@ mod tests {
     #[test]
     fn wizard_enter_keeps_defaults() {
         let mut c = Config::default();
-        run_wizard(&mut c, "\n\n\n\n\n\n").unwrap();
+        run_wizard(&mut c, "\n\n\n\n\n\n\n").unwrap();
         assert_eq!(c.battery.threshold, 20);
-        assert!(c.battery.enabled && c.logins.ssh && c.logins.local);
+        assert!(c.battery.enabled && c.power.enabled && c.logins.ssh && c.logins.local);
         assert_eq!(c.webhook.url, "");
     }
 
     #[test]
     fn wizard_sets_values() {
         let mut c = Config::default();
-        run_wizard(&mut c, "https://example.com/h\ngeneric\nn\n30\nn\ny\n").unwrap();
+        run_wizard(&mut c, "https://example.com/h\ngeneric\nn\n30\nno\nn\ny\n").unwrap();
+        assert!(!c.power.enabled);
         assert_eq!(c.webhook.url, "https://example.com/h");
         assert_eq!(c.get("webhook.kind").unwrap(), "generic");
         assert!(!c.battery.enabled);
@@ -146,7 +149,7 @@ mod tests {
     #[test]
     fn wizard_reprompts_on_invalid_threshold() {
         let mut c = Config::default();
-        run_wizard(&mut c, "\n\n\nabc\n150\n30\n\n\n").unwrap();
+        run_wizard(&mut c, "\n\n\nabc\n150\n30\n\n\n\n").unwrap();
         assert_eq!(c.battery.threshold, 30);
     }
 
@@ -154,7 +157,7 @@ mod tests {
     fn wizard_never_prints_existing_url() {
         let mut c = Config::default();
         c.webhook.url = "https://discord.example/api/webhooks/tok123".into();
-        let out = run_wizard(&mut c, "\n\n\n\n\n\n").unwrap();
+        let out = run_wizard(&mut c, "\n\n\n\n\n\n\n").unwrap();
         assert!(!out.contains("tok123"));
         assert!(out.contains("(set)"));
     }

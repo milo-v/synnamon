@@ -1,8 +1,8 @@
 [package]
 name = "synnamon"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
-description = "Lightweight system monitor that alerts a webhook on low battery and logins"
+description = "Lightweight system monitor that alerts a webhook on low battery, power changes and logins"
 license = "MIT"
 repository = "https://github.com/milo-v/synnamon"
 
@@ -15,6 +15,7 @@ toml = "1.2.3"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+clap_mangen = "0.2"
 
 # HTTPS (rustls/ring) needs a C toolchain; the real target is Linux. Other
 # platforms get plain-HTTP ureq so unit tests build on a bare dev machine.
@@ -36,12 +37,13 @@ name = "synnamon"
 maintainer = "milo-v <milo-v@users.noreply.github.com>"
 section = "admin"
 priority = "optional"
-extended-description = "Watches battery level and successful SSH/local logins and sends alerts to a Discord or generic HTTP webhook. Configure with `sudo synnamon config`."
+extended-description = "Watches battery level, power plug/unplug events and successful SSH/local logins and sends alerts to a Discord or generic HTTP webhook. Configure with `sudo synnamon config`."
 depends = "$auto, systemd"
 maintainer-scripts = "packaging/debian"
 assets = [
     ["target/release/synnamon", "usr/bin/", "755"],
     ["packaging/synnamon.service", "lib/systemd/system/", "644"],
+    ["target/man/synnamon.1", "usr/share/man/man1/", "644"],
     ["README.md", "usr/share/doc/synnamon/README.md", "644"],
     ["LICENSE", "usr/share/doc/synnamon/LICENSE", "644"],
 ]

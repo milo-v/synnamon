@@ -32,6 +32,7 @@ jobs:
         run: |
           cargo build --release --locked
           cargo install cargo-deb --locked
+          cargo run --locked --release --example mangen -- target/man/synnamon.1
           cargo deb --no-build
           mkdir dist
           cp target/debian/synnamon_*_amd64.deb dist/synnamon_amd64.deb

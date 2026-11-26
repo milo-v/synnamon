@@ -2,8 +2,6 @@ use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const DEFAULT_PATH: &str = "/etc/synnamon/config.toml";
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum WebhookKind {
@@ -35,6 +33,18 @@ impl Default for Battery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct Power {
+    pub enabled: bool,
+}
+
+impl Default for Power {
+    fn default() -> Self {
+        Power { enabled: true }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Logins {
     pub ssh: bool,
     pub local: bool,
@@ -51,6 +61,7 @@ impl Default for Logins {
 pub struct Config {
     pub webhook: Webhook,
     pub battery: Battery,
+    pub power: Power,
     pub logins: Logins,
 }
 
@@ -120,6 +131,7 @@ impl Config {
             "battery.enabled" => self.battery.enabled.to_string(),
             "battery.threshold" => self.battery.threshold.to_string(),
             "battery.poll_secs" => self.battery.poll_secs.to_string(),
+            "power.enabled" => self.power.enabled.to_string(),
             "logins.ssh" => self.logins.ssh.to_string(),
             "logins.local" => self.logins.local.to_string(),
             _ => return None,
@@ -140,6 +152,7 @@ impl Config {
             "battery.enabled" => next.battery.enabled = parse_bool(value)?,
             "battery.threshold" => next.battery.threshold = value.parse().context("not a number 1-100")?,
             "battery.poll_secs" => next.battery.poll_secs = value.parse().context("not a number")?,
+            "power.enabled" => next.power.enabled = parse_bool(value)?,
             "logins.ssh" => next.logins.ssh = parse_bool(value)?,
             "logins.local" => next.logins.local = parse_bool(value)?,
             _ => bail!("unknown key '{key}'"),
@@ -164,7 +177,15 @@ mod tests {
 
     #[test]
     fn default_path_is_etc_synnamon() {
-        assert_eq!(DEFAULT_PATH, "/etc/synnamon/config.toml");
+        assert_eq!(crate::cli_def::DEFAULT_CONFIG_PATH, "/etc/synnamon/config.toml");
+    }
+
+    #[test]
+    fn config_from_before_power_existed_enables_power_alerts() {
+        let d = tempfile::tempdir().unwrap();
+        let p = d.path().join("c.toml");
+        std::fs::write(&p, "[battery]\nthreshold = 30\n[logins]\nssh = false\n").unwrap();
+        assert!(Config::load(&p).unwrap().power.enabled);
     }
 
     #[test]
@@ -209,6 +230,7 @@ mod tests {
             ("battery.enabled", "false"),
             ("battery.threshold", "15"),
             ("battery.poll_secs", "30"),
+            ("power.enabled", "false"),
             ("logins.ssh", "false"),
             ("logins.local", "false"),
         ] {
