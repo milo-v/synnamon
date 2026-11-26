@@ -3,6 +3,8 @@ name = "synnamon"
 version = "0.1.0"
 edition = "2024"
 description = "Lightweight system monitor that alerts a webhook on low battery and logins"
+license = "MIT"
+repository = "https://github.com/milo-v/synnamon"
 
 [dependencies]
 anyhow = "1.0.105"
@@ -40,4 +42,5 @@ assets = [
     ["target/release/synnamon", "usr/bin/", "755"],
     ["packaging/synnamon.service", "lib/systemd/system/", "644"],
     ["README.md", "usr/share/doc/synnamon/README.md", "644"],
+    ["LICENSE", "usr/share/doc/synnamon/LICENSE", "644"],
 ]

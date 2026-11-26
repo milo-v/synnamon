@@ -18,24 +18,22 @@ Configuration is done through the tool itself (`synnamon config`), so there is n
 
 ## Install
 
-Replace `OWNER` below with the GitHub user or org that hosts this repository.
-
 ### Option 1: one-line installer (recommended)
 
 ```bash
-curl -fsSL https://github.com/OWNER/synnamon/releases/latest/download/install.sh | sudo bash
+curl -fsSL https://github.com/milo-v/synnamon/releases/latest/download/install.sh | sudo bash
 ```
 
 This downloads the latest `.deb` from the GitHub release, verifies its SHA-256 checksum, and installs it with `apt`. To pin a version:
 
 ```bash
-curl -fsSL https://github.com/OWNER/synnamon/releases/latest/download/install.sh | sudo SYNNAMON_VERSION=0.1.0 bash
+curl -fsSL https://github.com/milo-v/synnamon/releases/latest/download/install.sh | sudo SYNNAMON_VERSION=0.1.0 bash
 ```
 
 Prefer to read the script first? Download it, inspect it, then run it:
 
 ```bash
-curl -fsSLO https://github.com/OWNER/synnamon/releases/latest/download/install.sh
+curl -fsSLO https://github.com/milo-v/synnamon/releases/latest/download/install.sh
 less install.sh
 sudo bash install.sh
 ```
@@ -43,8 +41,8 @@ sudo bash install.sh
 ### Option 2: install the .deb by hand
 
 ```bash
-curl -fsSLO https://github.com/OWNER/synnamon/releases/latest/download/synnamon_amd64.deb
-curl -fsSLO https://github.com/OWNER/synnamon/releases/latest/download/SHA256SUMS
+curl -fsSLO https://github.com/milo-v/synnamon/releases/latest/download/synnamon_amd64.deb
+curl -fsSLO https://github.com/milo-v/synnamon/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS
 sudo apt install ./synnamon_amd64.deb
 ```
@@ -54,7 +52,7 @@ sudo apt install ./synnamon_amd64.deb
 Requires Rust (stable) and a C toolchain (`sudo apt install build-essential`).
 
 ```bash
-git clone https://github.com/OWNER/synnamon.git
+git clone https://github.com/milo-v/synnamon.git
 cd synnamon
 cargo install cargo-deb --locked
 cargo build --release --locked
@@ -166,4 +164,4 @@ Design and implementation notes are in `docs/superpowers/`.
 
 ## License
 
-Not yet chosen. Add a `LICENSE` file (and a `license` field in `Cargo.toml`) before making the repository public.
+[MIT](LICENSE)
