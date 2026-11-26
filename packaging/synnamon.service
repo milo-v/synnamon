@@ -1,0 +1,21 @@
+[Unit]
+Description=Synnamon system monitor and alerter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=synnamon
+Group=synnamon
+SupplementaryGroups=systemd-journal
+ExecStart=/usr/local/bin/synnamon run
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/synnamon
+
+[Install]
+WantedBy=multi-user.target

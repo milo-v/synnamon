@@ -1,4 +1,4 @@
-use crate::alert::{self, Alert, AlertKind};
+use crate::alert::{self, Alert};
 use crate::config::Config;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
@@ -56,6 +56,7 @@ pub fn run(config_path: PathBuf) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::alert::AlertKind;
     use std::fs::{self, File};
 
     fn write_at(p: &Path, text: &str, secs: u64) {

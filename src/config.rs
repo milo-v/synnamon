@@ -2,7 +2,11 @@ use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const DEFAULT_PATH: &str = "/etc/synnamon/config.toml";
+pub const DEFAULT_PATH: &str = "/etc/synna            if let Some(dir) = path.parent() {
+                if let Ok(m) = std::fs::metadata(dir) {
+                    let _ = chown(&tmp, None, Some(m.gid()));
+                }
+            }on/config.toml";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -82,8 +86,15 @@ impl Config {
         std::fs::write(&tmp, toml::to_string_pretty(self)?)?;
         #[cfg(unix)]
         {
-            use std::os::unix::fs::PermissionsExt;
+            use std::os::unix::fs::{chown, MetadataExt, PermissionsExt};
             std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o640))?;
+            // Group-own the file like its directory (root:synnamon) so the service user can read it
+            // even when this runs under sudo.
+            if let Ok(m) = path.parent().map(std::fs::metadata).transpose().map(|m| m) {
+                if let Some(m) = m {
+                    let _ = chown(&tmp, None, Some(m.gid()));
+                }
+            }
         }
         std::fs::rename(&tmp, path)?;
         Ok(())
