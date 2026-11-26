@@ -45,6 +45,19 @@ impl Default for Power {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct Report {
+    pub enabled: bool,
+    pub interval_mins: u64,
+}
+
+impl Default for Report {
+    fn default() -> Self {
+        Report { enabled: false, interval_mins: 60 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Logins {
     pub ssh: bool,
     pub local: bool,
@@ -62,6 +75,7 @@ pub struct Config {
     pub webhook: Webhook,
     pub battery: Battery,
     pub power: Power,
+    pub report: Report,
     pub logins: Logins,
 }
 
@@ -114,6 +128,9 @@ impl Config {
         if self.battery.poll_secs < 5 {
             bail!("battery.poll_secs must be at least 5");
         }
+        if !(1..=1440).contains(&self.report.interval_mins) {
+            bail!("report.interval_mins must be 1-1440");
+        }
         let u = &self.webhook.url;
         if !u.is_empty() && !u.starts_with("http://") && !u.starts_with("https://") {
             bail!("webhook.url must start with http:// or https://");
@@ -132,6 +149,8 @@ impl Config {
             "battery.threshold" => self.battery.threshold.to_string(),
             "battery.poll_secs" => self.battery.poll_secs.to_string(),
             "power.enabled" => self.power.enabled.to_string(),
+            "report.enabled" => self.report.enabled.to_string(),
+            "report.interval_mins" => self.report.interval_mins.to_string(),
             "logins.ssh" => self.logins.ssh.to_string(),
             "logins.local" => self.logins.local.to_string(),
             _ => return None,
@@ -153,6 +172,8 @@ impl Config {
             "battery.threshold" => next.battery.threshold = value.parse().context("not a number 1-100")?,
             "battery.poll_secs" => next.battery.poll_secs = value.parse().context("not a number")?,
             "power.enabled" => next.power.enabled = parse_bool(value)?,
+            "report.enabled" => next.report.enabled = parse_bool(value)?,
+            "report.interval_mins" => next.report.interval_mins = value.parse().context("not a number 1-1440")?,
             "logins.ssh" => next.logins.ssh = parse_bool(value)?,
             "logins.local" => next.logins.local = parse_bool(value)?,
             _ => bail!("unknown key '{key}'"),
@@ -186,6 +207,22 @@ mod tests {
         let p = d.path().join("c.toml");
         std::fs::write(&p, "[battery]\nthreshold = 30\n[logins]\nssh = false\n").unwrap();
         assert!(Config::load(&p).unwrap().power.enabled);
+    }
+
+    #[test]
+    fn status_report_is_off_by_default_and_hourly() {
+        let c = Config::default();
+        assert!(!c.report.enabled);
+        assert_eq!(c.report.interval_mins, 60);
+    }
+
+    #[test]
+    fn report_interval_must_be_1_to_1440() {
+        let mut c = Config::default();
+        assert!(c.set("report.interval_mins", "0").is_err());
+        assert!(c.set("report.interval_mins", "1441").is_err());
+        assert_eq!(c.report.interval_mins, 60);
+        assert!(c.set("report.interval_mins", "1440").is_ok());
     }
 
     #[test]
@@ -231,6 +268,8 @@ mod tests {
             ("battery.threshold", "15"),
             ("battery.poll_secs", "30"),
             ("power.enabled", "false"),
+            ("report.enabled", "true"),
+            ("report.interval_mins", "120"),
             ("logins.ssh", "false"),
             ("logins.local", "false"),
         ] {

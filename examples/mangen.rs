@@ -57,6 +57,7 @@ fn main() -> std::io::Result<()> {
     writeln!(buf, ".SH ALERTS")?;
     writeln!(buf, ".TP\n\\fBbattery\\fR\nBattery fell below the threshold. Sent once, and again only after it recovers.")?;
     writeln!(buf, ".TP\n\\fBpower\\fR\nExternal power was plugged in or unplugged.")?;
+    writeln!(buf, ".TP\n\\fBreport\\fR\nThe optional periodic status report: host, uptime, load, memory, disk and battery. Off by default.")?;
     writeln!(buf, ".TP\n\\fBssh_login\\fR\nA successful SSH login (user, source address, authentication method).")?;
     writeln!(buf, ".TP\n\\fBlocal_login\\fR\nA successful local login (console, tty, desktop).")?;
     writeln!(buf, ".PP\nWith a generic webhook, the JSON body has the fields kind, title and body, where kind is one of the names above (or test).")?;

@@ -6,6 +6,7 @@ mod config;
 mod daemon;
 mod logins;
 mod power;
+mod report;
 mod update;
 
 use clap::Parser;

@@ -14,6 +14,8 @@ pub const CONFIG_KEYS: &[(&str, &str, &str)] = &[
     ("battery.threshold", "20", "Alert when the battery falls below this percent (1-100)."),
     ("battery.poll_secs", "60", "How often to check the battery, in seconds (minimum 5)."),
     ("power.enabled", "true", "Alert when external power is plugged in or unplugged."),
+    ("report.enabled", "false", "Send a periodic status report (uptime, load, memory, disk, battery)."),
+    ("report.interval_mins", "60", "Minutes between status reports (1-1440)."),
     ("logins.ssh", "true", "Alert on successful SSH logins."),
     ("logins.local", "true", "Alert on successful local logins."),
 ];
@@ -21,7 +23,7 @@ pub const CONFIG_KEYS: &[(&str, &str, &str)] = &[
 fn keys_help() -> String {
     let mut s = String::from("Settings (key, default, meaning):\n");
     for (key, default, meaning) in CONFIG_KEYS {
-        s.push_str(&format!("  {key:<18} {default:<8} {meaning}\n"));
+        s.push_str(&format!("  {key:<20} {default:<8} {meaning}\n"));
     }
     s.push_str("\nConfig commands usually need sudo: the file is readable only by root and the synnamon user.");
     s

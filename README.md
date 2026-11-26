@@ -8,6 +8,7 @@ A small, fast system monitor that sends alerts to a Discord (or any HTTP) webhoo
 |-------|-------|
 | Battery drops below your threshold (default 20%) | once, then again only after it recovers and drops again |
 | Power plugged in / unplugged | which, with the battery level |
+| Status report (off by default) | host, uptime, load, memory, disk, battery, every N minutes (default 60) |
 | Successful SSH login | user, source IP, auth method |
 | Successful local login (console, tty, desktop) | user, session |
 
@@ -108,6 +109,8 @@ sudo synnamon config set battery.threshold 30
 | `battery.threshold` | `20` | Alert when below this percent (1-100) |
 | `battery.poll_secs` | `60` | How often to check (minimum 5) |
 | `power.enabled` | `true` | Alert when external power is plugged in or unplugged |
+| `report.enabled` | `false` | Send a periodic status report |
+| `report.interval_mins` | `60` | Minutes between reports (1-1440); the first one arrives one interval after enabling |
 | `logins.ssh` | `true` | Alert on successful SSH logins |
 | `logins.local` | `true` | Alert on successful local logins |
 
@@ -123,7 +126,7 @@ With `webhook.kind` set to `generic`, Synnamon POSTs JSON to your URL:
 {"kind": "ssh_login", "title": "SSH login", "body": "milo logged in from 192.168.1.50 via publickey"}
 ```
 
-`kind` is one of `battery`, `power`, `ssh_login`, `local_login`, `test`.
+`kind` is one of `battery`, `power`, `report`, `ssh_login`, `local_login`, `test`.
 
 ---
 

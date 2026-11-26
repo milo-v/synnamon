@@ -10,6 +10,7 @@ use std::time::Duration;
 pub enum AlertKind {
     Battery,
     Power,
+    Report,
     SshLogin,
     LocalLogin,
     Test,
@@ -20,6 +21,7 @@ impl AlertKind {
         match self {
             AlertKind::Battery => "battery",
             AlertKind::Power => "power",
+            AlertKind::Report => "report",
             AlertKind::SshLogin => "ssh_login",
             AlertKind::LocalLogin => "local_login",
             AlertKind::Test => "test",
@@ -29,6 +31,7 @@ impl AlertKind {
         match self {
             AlertKind::Battery => 0xE67E22,
             AlertKind::Power => 0xF1C40F,
+            AlertKind::Report => 0x9B59B6,
             AlertKind::SshLogin => 0x3498DB,
             AlertKind::LocalLogin => 0x2ECC71,
             AlertKind::Test => 0x95A5A6,
