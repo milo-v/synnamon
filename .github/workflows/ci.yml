@@ -31,6 +31,8 @@ jobs:
           cargo deb --no-build
       - name: Smoke-test the package
         run: |
+          # dpkg warns on every operation if the package has no Maintainer.
+          dpkg-deb -f target/debian/synnamon_*_amd64.deb Maintainer | grep -q "@"
           apt-get install -y ./target/debian/synnamon_*_amd64.deb
           synnamon --help
           synnamon config show

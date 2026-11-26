@@ -1,6 +1,6 @@
 [package]
 name = "synnamon"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "Lightweight system monitor that alerts a webhook on low battery and logins"
 license = "MIT"
@@ -33,6 +33,7 @@ panic = "abort"
 
 [package.metadata.deb]
 name = "synnamon"
+maintainer = "milo-v <milo-v@users.noreply.github.com>"
 section = "admin"
 priority = "optional"
 extended-description = "Watches battery level and successful SSH/local logins and sends alerts to a Discord or generic HTTP webhook. Configure with `sudo synnamon config`."

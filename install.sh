@@ -28,6 +28,7 @@ else
 fi
 
 tmp="$(mktemp -d)"
+chmod 0755 "$tmp"   # lets apt's sandbox user read the download (avoids a harmless warning)
 trap 'rm -rf "$tmp"' EXIT
 
 echo "Downloading synnamon ($VERSION)..."
